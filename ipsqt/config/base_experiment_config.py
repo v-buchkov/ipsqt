@@ -26,10 +26,6 @@ class BaseExperimentConfig:
         default="data_df.csv", metadata={"docs": "Preprocessed data"}
     )
 
-    PRESENCE_MATRIX_FILENAME: str | None = field(
-        default="presence_matrix.csv", metadata={"docs": "Presence matrix (2d pivot)"}
-    )
-
     # Experiment Settings
     START_DATE: pd.Timestamp | None = field(
         default=pd.to_datetime("1980-01-01"),
@@ -75,7 +71,7 @@ class BaseExperimentConfig:
 
     # Universe Setting
     FACTORS: tuple[str] = field(
-        default=("MOEX_INDEX",),
+        default=(),
         metadata={"docs": "Tradeable factors tuple"},
     )
 
@@ -85,7 +81,7 @@ class BaseExperimentConfig:
     )
 
     HEDGING_ASSETS: tuple[str] = field(
-        default=("spx_fut",),
+        default=(),
         metadata={"docs": "Tradeable assets tuple"},
     )
 

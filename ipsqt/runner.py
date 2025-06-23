@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from ipsqt.config.experiment_config import BaseExperimentConfig
+    from ipsqt.config.base_experiment_config import BaseExperimentConfig
     from ipsqt.config.trading_config import TradingConfig
     from ipsqt.features.preprocessor import Preprocessor
     from ipsqt.hedge.base_hedger import BaseHedger

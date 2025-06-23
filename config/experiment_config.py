@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from ipsqt.config.experiment_config import BaseExperimentConfig
+from ipsqt.config.base_experiment_config import BaseExperimentConfig
 
 
 @dataclass
