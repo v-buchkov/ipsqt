@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from abc import abstractmethod
 from typing import Type
 
+import numpy as np
 import pandas as pd
 import torch
 from torch import nn
@@ -12,13 +14,13 @@ from ipsqt.prediction.base_predictor import BasePredictor
 from ipsqt.config.base_model_config import BaseModelConfig
 
 
-class DLPredictor(BasePredictor):
-    def __init__(self, model_cls: Type[nn.Module], n_features: int, model_config: BaseModelConfig = BaseModelConfig(), verbose: bool = False):
+class _DLPredictor(BasePredictor):
+    def __init__(self, model_cls: Type[nn.Module], model_config: BaseModelConfig = BaseModelConfig(), verbose: bool = False):
         super().__init__(model_config=model_config)
 
         self.model_config = model_config
-        self.model_config.n_features = n_features
 
+        torch.random.manual_seed(model_config.random_seed)
         self.model = model_cls(**model_config.dict())
 
         self.model = self.model.to(model_config.device)
@@ -33,9 +35,6 @@ class DLPredictor(BasePredictor):
         features = torch.Tensor(X.to_numpy())
         targets = torch.Tensor(y.to_numpy())
 
-        if targets.ndim == 1:
-            targets = targets.unsqueeze(1)
-
         train_set = TensorDataset(features, targets)
         train_loader = DataLoader(
             train_set,
@@ -46,10 +45,6 @@ class DLPredictor(BasePredictor):
         )
 
         self._train_model(train_loader)
-
-    def _predict_model(self, X: pd.DataFrame) -> pd.DataFrame:
-        feat_torch = torch.Tensor(X.to_numpy()).to(self.device)
-        return self.model(feat_torch).detach().cpu().numpy().squeeze(0)
 
     def _train_model(self, train_loader: DataLoader) -> None:
         iter = range(self.model_config.n_epochs)
@@ -81,3 +76,35 @@ class DLPredictor(BasePredictor):
             self.scheduler.step()
             if self.verbose:
                 pbar.set_description(f"Loss: {train_loss:.4f}")
+
+    @abstractmethod
+    def _predict_model(self, X: pd.DataFrame) -> pd.DataFrame:
+        raise NotImplementedError
+
+
+class DLRegressor(_DLPredictor):
+    def __init__(self, model_cls: Type[nn.Module], model_config: BaseModelConfig = BaseModelConfig(), verbose: bool = False):
+        super().__init__(
+            model_cls=model_cls,
+            model_config=model_config,
+            verbose=verbose,
+        )
+
+    def _predict_model(self, X: pd.DataFrame) -> np.ndarray:
+        feat_torch = torch.Tensor(X.to_numpy()).to(self.device)
+        return self.model(feat_torch).detach().cpu().numpy()
+
+
+class DLClassifier(_DLPredictor):
+    def __init__(self, model_cls: Type[nn.Module], model_config: BaseModelConfig = BaseModelConfig(), verbose: bool = False):
+        super().__init__(
+            model_cls=model_cls,
+            model_config=model_config,
+            verbose=verbose,
+        )
+
+    def _predict_model(self, X: pd.DataFrame) -> np.ndarray:
+        feat_torch = torch.Tensor(X.to_numpy()).to(self.device)
+        pred = self.model(feat_torch).detach()
+        pred = torch.argmax(pred, dim=1)
+        return pred.cpu().numpy()
