@@ -16,7 +16,7 @@ class _MLP(nn.Module):
         return self.layers(x)
 
 
-class MLPPredictor(nn.Module):
+class MLP(nn.Module):
     def __init__(
         self, hidden_size: int, n_features: int, n_layers: int, *args, **kwargs
     ):

@@ -122,6 +122,7 @@ class Runner:
 
         self.strategy_backtester = self.init_backtester()
 
+    @property
     def available_features(self) -> list[str]:
         return self.features.columns.tolist()
 

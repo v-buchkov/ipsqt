@@ -15,22 +15,22 @@ from ipsqt.config.base_experiment_config import BaseExperimentConfig
 class ExperimentConfig(BaseExperimentConfig):
     # Folders
     PATH_INPUT: Path = field(
-        default=Path(__file__).resolve().parents[2] / "data" / "input",
+        default=Path(__file__).resolve().parents[1] / "data" / "input",
         metadata={"docs": "Relative path to data folder"},
     )
 
     PATH_OUTPUT: Path = field(
-        default=Path(__file__).resolve().parents[2] / "data" / "output",
+        default=Path(__file__).resolve().parents[1] / "data" / "output",
         metadata={"docs": "Relative path to data folder"},
     )
 
     SAVE_PATH: Path = field(
-        default=Path(__file__).resolve().parents[2] / "data" / "run",
+        default=Path(__file__).resolve().parents[1] / "backtests" / "runs",
         metadata={"docs": "Relative path to data folder"},
     )
 
     # Filenames
-    COUNTRY_DATA_FILENAME: str = field(default="CountryData.xlsx", metadata={"docs": "Initial data"})
+    INPUT_DATA_FILENAME: str = field(default="market_data.xlsx", metadata={"docs": "Initial data for the project"})
 
     DF_FILENAME: str = field(default="data_df.csv", metadata={"docs": "Initial data"})
 
@@ -57,56 +57,27 @@ class ExperimentConfig(BaseExperimentConfig):
 
     # Universe Setting
     ASSET_UNIVERSE: tuple[str] = field(
-        default=(
-            "Australia",
-            "Austria",
-            "Belgium",
-            "Brazil",
-            "Canada",
-            "Chile",
-            "China",
-            "France",
-            "Germany",
-            "Hong Kong",
-            "India",
-            "Italy",
-            "Japan",
-            "Malaysia",
-            "Mexico",
-            "Netherlands",
-            "Russia",
-            "Singapore",
-            "South Africa",
-            "South Korea",
-            "Spain",
-            "Sweden",
-            "Switzerland",
-            "Taiwan",
-            "Thailand",
-            "Turkey",
-            "UK",
-            "US",
-        ),
+        default=("_MKT",),
         metadata={"docs": "Tradeable assets tuple"},
     )
 
     HEDGING_ASSETS: tuple[str] = field(
-        default=(),
+        default=("_MKT",),
         metadata={"docs": "Tradeable assets tuple"},
     )
 
     FACTORS: tuple[str] = field(
-        default=("MKT_Factor",),
+        default=("_MKT",),
         metadata={"docs": "Tradeable factors tuple"},
     )
 
     RF_NAME: str = field(
-        default="RF",
+        default="IR",
         metadata={"docs": "Risk-Free rate column name"},
     )
 
     MKT_NAME: str = field(
-        default="MKT_Factor",
+        default="_MKT",
         metadata={"docs": "Market index column name"},
     )
 

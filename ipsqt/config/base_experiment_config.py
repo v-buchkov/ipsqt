@@ -26,6 +26,10 @@ class BaseExperimentConfig:
         default="data_df.csv", metadata={"docs": "Preprocessed data"}
     )
 
+    PRESENCE_MATRIX_FILENAME: str = field(
+        default="presence_matrix.csv", metadata={"docs": "Presence matrix"}
+    )
+
     # Experiment Settings
     START_DATE: pd.Timestamp | None = field(
         default=pd.to_datetime("1980-01-01"),

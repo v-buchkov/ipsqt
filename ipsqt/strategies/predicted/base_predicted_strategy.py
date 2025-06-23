@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -10,26 +10,20 @@ import pandas as pd
 
 from ipsqt.strategies.base_strategy import BaseStrategy
 from ipsqt.prediction.base_predictor import BasePredictor
-from ipsqt.config.base_model_config import BaseModelConfig
 
 
-class BasePredictedStrategy(ABC, BaseStrategy):
+class BasePredictedStrategy(BaseStrategy):
     PERCENTAGE_VALID_POINTS = 1.0
 
     def __init__(
         self,
         predictor: BasePredictor,
-        model_config: BaseModelConfig,
         window_size: int | None = None,
     ) -> None:
         super().__init__()
 
         self.predictor = predictor
-        self.model_config = model_config
         self.window_size = window_size
-
-        self.feat_scaler = self.model_config.feature_scaler() if self.model_config.feature_scaler is not None else None
-        self.target_scaler = self.model_config.target_scaler() if self.model_config.target_scaler is not None else None
 
     def _filter_stocks(self, training_data: TrainingData) -> TrainingData:
         ret = training_data.simple_excess_returns[self.available_assets]
@@ -94,14 +88,6 @@ class BasePredictedStrategy(ABC, BaseStrategy):
         feat = feat.loc[first_date:last_date]
         target = target.loc[first_date:last_date]
 
-        if self.feat_scaler is not None:
-            feat_transf = self.feat_scaler.fit_transform(feat)
-            feat = pd.DataFrame(feat_transf, index=feat.index, columns=feat.columns)
-
-        if self.target_scaler is not None:
-            target_transf = self.target_scaler.fit_transform(target)
-            target = pd.Series(target_transf, index=target.index, name=target.name)
-
         return feat, target
 
     def _fit(self, training_data: TrainingData) -> None:
@@ -123,17 +109,9 @@ class BasePredictedStrategy(ABC, BaseStrategy):
     ) -> pd.DataFrame:
         feat = prediction_data.features
 
-        if self.feat_scaler is not None:
-            feat_transf = self.feat_scaler.transform(feat)
-            feat = pd.DataFrame(feat_transf, index=feat.index, columns=feat.columns)
-
         predictions = self.predictor.predict(feat)
-
-        if self.target_scaler is not None:
-            predictions = self.target_scaler.inverse_transform(predictions)
-
         predictions = pd.DataFrame(
-            predictions, columns=self.available_assets, index=predictions.index
+            predictions, columns=self.available_assets, index=feat.index
         )
 
         weights_.loc[:, self.available_assets] = self.pred_to_weights(predictions)

@@ -1,55 +1,32 @@
 from __future__ import annotations
 
-from enum import Enum
-
 import pandas as pd
 from ipsqt.config.trading_config import TradingConfig
 from ipsqt.backtest.assessor import StrategyStatistics
 from ipsqt.runner import Runner
-from ipsqt.strategies.estimated.min_var import MinVariance
-from ipsqt.cov_estimators.cov_estimators import CovEstimators
 from ipsqt.features.preprocessor import Preprocessor
+from config.experiment_config import ExperimentConfig
+from config.dl_model_config import DLModelConfig
+from ipsqt.prediction.dl.dl_predictor import DLPredictor
 
-from config.liquid_experiment_config import ExperimentConfig as LiquidConfig
-from config.spx_experiment_config import ExperimentConfig as SPXConfig
-from config.topn_experiment_config import ExperimentConfig as TopNConfig
-
-
-class Dataset(Enum):
-    LIQUID_US = LiquidConfig
-    SPX_US = SPXConfig
-    TOPN_US = TopNConfig
+from ipsqt.strategies.predicted.binary_position_strategy import BinaryPositionStrategy
+from ipsqt.prediction.dl.models.mlp import MLP
 
 
-REBAL_FREQ = "ME"
-
-DATASET = Dataset.SPX_US
-
-ESTIMATION_WINDOW = 365 * 3
-ESTIMATOR = CovEstimators.GLASSO.value()
+REBAL_FREQ = "D"
+STRATEGY = BinaryPositionStrategy
+MODEL = MLP
 
 SAVE = True
 
-TRADING_CONFIG = TradingConfig(
-    broker_fee=0.05 / 100,
-    bid_ask_spread=0.03 / 100,
-    total_exposure=1,
-    max_exposure=1,
-    min_exposure=0,
-    trading_lag_days=1,
-)
-
 
 def initialize(
-        dataset: Dataset,
         with_causal_window: bool = True,
         start: str | None = None,
         end: str | None = None,
-        trading_config: TradingConfig = TRADING_CONFIG,
         rebal_freq: str = REBAL_FREQ,
-        topn: int | None = None,
 ) -> tuple[Preprocessor, Runner]:
-    experiment_config = dataset.value(topn=topn) if topn else dataset.value()
+    experiment_config = ExperimentConfig()
 
     experiment_config.N_LOOKBEHIND_PERIODS = None
     experiment_config.REBALANCE_FREQ = rebal_freq
@@ -62,13 +39,13 @@ def initialize(
     if end is not None:
         experiment_config.END_DATE = pd.Timestamp(end)
 
-    factors = pd.read_csv(experiment_config.PATH_OUTPUT / "factors.csv")
-    factors["date"] = pd.to_datetime(factors["date"])
-    factors = factors.set_index("date")
-    factor_names = tuple(factors.columns.astype(str).tolist())
-    experiment_config.FACTORS = factor_names
-
     preprocessor = Preprocessor()
+
+    trading_config = TradingConfig(
+        max_exposure=2,
+        min_exposure=-2,
+        trading_lag_days=0,
+    )
 
     runner = Runner(
         experiment_config=experiment_config,
@@ -81,15 +58,17 @@ def initialize(
 
 def run_backtest() -> StrategyStatistics:
     print("Running backtest...")
-    print(f"Estimation window: {ESTIMATION_WINDOW}")
+    preprocessor, runner = initialize()
 
-    preprocessor, runner = initialize(DATASET, TRADING_CONFIG, topn=100)
-    trading_config = TRADING_CONFIG
+    predictor = DLPredictor(
+        model_cls=MODEL,
+        model_config=DLModelConfig(),
+        n_features=len(runner.available_features),
+        verbose=False,
+    )
 
-    strategy = MinVariance(
-        cov_estimator=ESTIMATOR,
-        trading_config=trading_config,
-        window_size=ESTIMATION_WINDOW,
+    strategy = STRATEGY(
+        predictor=predictor,
     )
 
     result = runner(
@@ -98,10 +77,11 @@ def run_backtest() -> StrategyStatistics:
         hedger=None,
     )
 
-    strategy_name = ESTIMATOR.__class__.__name__
+    strategy_name = STRATEGY.__class__.__name__
+    model_name = MODEL.__class__.__name__
 
     if SAVE:
-        runner.save(f"{DATASET.name}_" + strategy_name + f"_rebal{REBAL_FREQ}")
+        runner.save(f"{strategy_name}_" + model_name + f"_rebal{REBAL_FREQ}")
 
     runner.plot_cumulative(
         strategy_name=strategy_name,

@@ -14,7 +14,7 @@ from ipsqt.config.base_model_config import BaseModelConfig
 
 class DLPredictor(BasePredictor):
     def __init__(self, model_cls: Type[nn.Module], n_features: int, model_config: BaseModelConfig = BaseModelConfig(), verbose: bool = False):
-        super().__init__()
+        super().__init__(model_config=model_config)
 
         self.model_config = model_config
         self.model_config.n_features = n_features
@@ -29,9 +29,12 @@ class DLPredictor(BasePredictor):
         self.scheduler = model_config.scheduler(self.optimizer, T_max=model_config.n_epochs)
         self.criterion = model_config.loss
 
-    def fit(self, X: pd.DataFrame, y: pd.Series) -> None:
+    def _fit_model(self, X: pd.DataFrame, y: pd.Series) -> None:
         features = torch.Tensor(X.to_numpy())
         targets = torch.Tensor(y.to_numpy())
+
+        if targets.ndim == 1:
+            targets = targets.unsqueeze(1)
 
         train_set = TensorDataset(features, targets)
         train_loader = DataLoader(
@@ -44,7 +47,7 @@ class DLPredictor(BasePredictor):
 
         self._train_model(train_loader)
 
-    def predict(self, X: pd.DataFrame) -> pd.DataFrame:
+    def _predict_model(self, X: pd.DataFrame) -> pd.DataFrame:
         feat_torch = torch.Tensor(X.to_numpy()).to(self.device)
         return self.model(feat_torch).detach().cpu().numpy().squeeze(0)
 

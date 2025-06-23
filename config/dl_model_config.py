@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Type
+from dataclasses import dataclass
 
 import torch
 import torch.nn as nn
@@ -8,6 +9,7 @@ import torch.nn as nn
 from ipsqt.config.base_model_config import BaseModelConfig
 
 
+@dataclass
 class DLModelConfig(BaseModelConfig):
     lr: float = 1e-3
     hidden_size: int = 32
