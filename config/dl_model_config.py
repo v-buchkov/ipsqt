@@ -26,6 +26,6 @@ class DLModelConfig(BaseModelConfig):
 
     batch_size: int = 64
 
-    loss: nn.Module = nn.MSELoss()
+    loss: nn.Module = nn.CrossEntropyLoss()
 
     clip_grad_norm: float | None = None

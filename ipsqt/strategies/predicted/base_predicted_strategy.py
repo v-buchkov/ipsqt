@@ -19,11 +19,16 @@ class BasePredictedStrategy(BaseStrategy):
         self,
         predictor: BasePredictor,
         window_size: int | None = None,
+        retrain: bool = False,
     ) -> None:
         super().__init__()
 
         self.predictor = predictor
         self.window_size = window_size
+        self.retrain = retrain
+
+        self._predictions = []
+        self._fitted = False
 
     def _filter_stocks(self, training_data: TrainingData) -> TrainingData:
         ret = training_data.simple_excess_returns[self.available_assets]
@@ -91,10 +96,12 @@ class BasePredictedStrategy(BaseStrategy):
         return feat, target
 
     def _fit(self, training_data: TrainingData) -> None:
-        training_data = self._filter_stocks(training_data=training_data)
-        features, targets = self._get_prediction_data(training_data=training_data)
+        if self.retrain or not self._fitted:
+            training_data = self._filter_stocks(training_data=training_data)
+            features, targets = self._get_prediction_data(training_data=training_data)
 
-        self.predictor.fit(X=features, y=targets)
+            self.predictor.fit(X=features, y=targets)
+            self._fitted = True
 
     @abstractmethod
     def construct_target(self, training_data: TrainingData) -> pd.Series:
@@ -113,6 +120,7 @@ class BasePredictedStrategy(BaseStrategy):
         predictions = pd.DataFrame(
             predictions, columns=self.available_assets, index=feat.index
         )
+        self._predictions.append(predictions.to_numpy())
 
         weights_.loc[:, self.available_assets] = self.pred_to_weights(predictions)
         return weights_

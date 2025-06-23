@@ -17,10 +17,12 @@ class BinaryPositionStrategy(BasePredictedStrategy):
         self,
         predictor: BasePredictor,
         window_size: int | None = None,
+        retrain: bool = False,
     ) -> None:
         super().__init__(
             predictor=predictor,
             window_size=window_size,
+            retrain=retrain,
         )
 
     def construct_target(self, training_data: TrainingData) -> pd.Series:

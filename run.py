@@ -16,6 +16,7 @@ from ipsqt.prediction.dl.models.mlp import MLP
 REBAL_FREQ = "D"
 STRATEGY = BinaryPositionStrategy
 MODEL = MLP
+RETRAIN = False
 
 SAVE = True
 
@@ -69,6 +70,7 @@ def run_backtest() -> StrategyStatistics:
 
     strategy = STRATEGY(
         predictor=predictor,
+        retrain=RETRAIN,
     )
 
     result = runner(
