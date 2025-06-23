@@ -12,10 +12,17 @@ from tqdm import tqdm
 
 from ipsqt.prediction.base_predictor import BasePredictor
 from ipsqt.config.base_model_config import BaseModelConfig
+from ipsqt.prediction.dl.models.lstm import LSTMClassifier
 
 
 class _DLPredictor(BasePredictor):
-    def __init__(self, model_cls: Type[nn.Module], model_config: BaseModelConfig = BaseModelConfig(), verbose: bool = False):
+    def __init__(
+        self,
+        model_cls: Type[nn.Module],
+        model_config: BaseModelConfig = BaseModelConfig(),
+        verbose: bool = False,
+        track_grad_norm: bool = False,
+    ):
         super().__init__(model_config=model_config)
 
         self.model_config = model_config
@@ -26,9 +33,16 @@ class _DLPredictor(BasePredictor):
         self.model = self.model.to(model_config.device)
         self.device = model_config.device
         self.verbose = verbose
+        self.track_grad_norm = track_grad_norm
 
-        self.optimizer = model_config.optimizer(self.model.parameters(), lr=model_config.lr, weight_decay=model_config.weights_decay)
-        self.scheduler = model_config.scheduler(self.optimizer, T_max=model_config.n_epochs)
+        self.optimizer = model_config.optimizer(
+            self.model.parameters(),
+            lr=model_config.lr,
+            weight_decay=model_config.weights_decay,
+        )
+        self.scheduler = model_config.scheduler(
+            self.optimizer, T_max=model_config.n_epochs
+        )
         self.criterion = model_config.loss
 
     def _fit_model(self, X: pd.DataFrame, y: pd.Series) -> None:
@@ -39,8 +53,8 @@ class _DLPredictor(BasePredictor):
         train_loader = DataLoader(
             train_set,
             batch_size=self.model_config.batch_size,
-            shuffle=False, # time series training
-            pin_memory=False, # due to mps training
+            shuffle=False,  # time series training
+            pin_memory=False,  # due to mps training
             drop_last=False,
         )
 
@@ -54,13 +68,21 @@ class _DLPredictor(BasePredictor):
         for _ in (pbar := iter):
             train_loss = 0.0
             self.model.train()
+
+            if isinstance(self.model, LSTMClassifier):
+                h_t, c_t = None, None
+
             for features, labels in train_loader:
                 self.optimizer.zero_grad()
 
                 features = features.to(self.device)
                 labels = labels.to(self.device)
 
-                pred = self.model(features)
+                if isinstance(self.model, LSTMClassifier):
+                    pred, (h_t, c_t) = self.model(features, h_t, c_t)
+                    h_t, c_t = h_t.detach(), c_t.detach()
+                else:
+                    pred = self.model(features)
 
                 loss = self.criterion(pred, labels)
 
@@ -68,7 +90,10 @@ class _DLPredictor(BasePredictor):
                 self.optimizer.step()
 
                 if self.model_config.clip_grad_norm is not None:
-                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=self.model_config.clip_grad_norm)
+                    torch.nn.utils.clip_grad_norm_(
+                        self.model.parameters(),
+                        max_norm=self.model_config.clip_grad_norm,
+                    )
 
                 train_loss += loss.item()
 
@@ -83,7 +108,12 @@ class _DLPredictor(BasePredictor):
 
 
 class DLRegressor(_DLPredictor):
-    def __init__(self, model_cls: Type[nn.Module], model_config: BaseModelConfig = BaseModelConfig(), verbose: bool = False):
+    def __init__(
+        self,
+        model_cls: Type[nn.Module],
+        model_config: BaseModelConfig = BaseModelConfig(),
+        verbose: bool = False,
+    ):
         super().__init__(
             model_cls=model_cls,
             model_config=model_config,
@@ -96,7 +126,12 @@ class DLRegressor(_DLPredictor):
 
 
 class DLClassifier(_DLPredictor):
-    def __init__(self, model_cls: Type[nn.Module], model_config: BaseModelConfig = BaseModelConfig(), verbose: bool = False):
+    def __init__(
+        self,
+        model_cls: Type[nn.Module],
+        model_config: BaseModelConfig = BaseModelConfig(),
+        verbose: bool = False,
+    ):
         super().__init__(
             model_cls=model_cls,
             model_config=model_config,
@@ -105,6 +140,11 @@ class DLClassifier(_DLPredictor):
 
     def _predict_model(self, X: pd.DataFrame) -> np.ndarray:
         feat_torch = torch.Tensor(X.to_numpy()).to(self.device)
-        pred = self.model(feat_torch).detach()
+        if isinstance(self.model, LSTMClassifier):
+            pred, _ = self.model(feat_torch)
+            pred = pred.detach()
+        else:
+            pred = self.model(feat_torch).detach()
+
         pred = torch.argmax(pred, dim=1)
         return pred.cpu().numpy()

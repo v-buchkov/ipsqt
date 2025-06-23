@@ -12,6 +12,12 @@ class _MLP(nn.Module):
                 layers.append(nn.LeakyReLU(0.1))
         self.layers = nn.Sequential(*layers)
 
+        for name, param in self.named_parameters():
+            if "weight_hh" in name:
+                nn.init.orthogonal_(param)  # Orthogonal initialization
+            elif "weight_ih" in name:
+                nn.init.xavier_uniform_(param)  # Xavier initialization
+
     def forward(self, x):
         return self.layers(x)
 
@@ -30,7 +36,13 @@ class MLPRegressor(nn.Module):
 
 class MLPClassifier(nn.Module):
     def __init__(
-        self, hidden_size: int, n_features: int, n_classes: int, n_layers: int, *args, **kwargs
+        self,
+        hidden_size: int,
+        n_features: int,
+        n_classes: int,
+        n_layers: int,
+        *args,
+        **kwargs,
     ):
         super().__init__()
 

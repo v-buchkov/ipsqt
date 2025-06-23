@@ -21,7 +21,7 @@ class BaseModelConfig:
         device = torch.device("cpu")
 
     feature_scaler: Type[BaseEstimator] | None = StandardScaler
-    target_scaler: Type[BaseEstimator] | None  = None
+    target_scaler: Type[BaseEstimator] | None = None
 
     def dict(self):
         return {k: v for k, v in asdict(self).items()}

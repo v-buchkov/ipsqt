@@ -21,7 +21,9 @@ class DLModelConfig(BaseModelConfig):
     n_epochs: int = 10
 
     optimizer: Type[torch.optim.Optimizer] = torch.optim.SGD
-    scheduler: Type[torch.optim.lr_scheduler._LRScheduler] = torch.optim.lr_scheduler.CosineAnnealingLR
+    scheduler: Type[torch.optim.lr_scheduler._LRScheduler] = (
+        torch.optim.lr_scheduler.CosineAnnealingLR
+    )
 
     weights_decay: float = 0.0
 

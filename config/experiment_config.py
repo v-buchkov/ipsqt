@@ -30,7 +30,9 @@ class ExperimentConfig(BaseExperimentConfig):
     )
 
     # Filenames
-    INPUT_DATA_FILENAME: str = field(default="market_data.xlsx", metadata={"docs": "Initial data for the project"})
+    INPUT_DATA_FILENAME: str = field(
+        default="market_data.xlsx", metadata={"docs": "Initial data for the project"}
+    )
 
     DF_FILENAME: str = field(default="data_df.csv", metadata={"docs": "Initial data"})
 
