@@ -11,6 +11,7 @@ import torch
 @dataclass
 class BaseModelConfig:
     n_features: int | None = None
+    random_seed: int = 12
 
     if torch.backends.mps.is_available():
         device = torch.device("mps")

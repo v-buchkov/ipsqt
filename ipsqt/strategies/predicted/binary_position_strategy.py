@@ -26,7 +26,8 @@ class BinaryPositionStrategy(BasePredictedStrategy):
         )
 
     def construct_target(self, training_data: TrainingData) -> pd.Series:
-        return training_data.simple_excess_returns.iloc[:, 0].apply(lambda x: 1 if x > 0 else -1)
+        self.predictor.model_config.n_classes = 2
+        return training_data.simple_excess_returns.iloc[:, 0].apply(lambda x: 1 if x > 0 else 0)
 
     def pred_to_weights(self, predictions: pd.DataFrame) -> pd.Series:
         return np.sign(predictions)

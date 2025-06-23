@@ -16,13 +16,25 @@ class _MLP(nn.Module):
         return self.layers(x)
 
 
-class MLP(nn.Module):
+class MLPRegressor(nn.Module):
     def __init__(
         self, hidden_size: int, n_features: int, n_layers: int, *args, **kwargs
     ):
         super().__init__()
 
         self.model = _MLP([n_features] + ([hidden_size] * n_layers) + [1])
+
+    def forward(self, x: torch.Tensor):
+        return self.model(x)
+
+
+class MLPClassifier(nn.Module):
+    def __init__(
+        self, hidden_size: int, n_features: int, n_classes: int, n_layers: int, *args, **kwargs
+    ):
+        super().__init__()
+
+        self.model = _MLP([n_features] + ([hidden_size] * n_layers) + [n_classes])
 
     def forward(self, x: torch.Tensor):
         return self.model(x)

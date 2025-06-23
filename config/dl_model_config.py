@@ -14,6 +14,7 @@ class DLModelConfig(BaseModelConfig):
     lr: float = 1e-3
     hidden_size: int = 32
     n_layers: int = 2
+    n_classes: int = 2
 
     dropout: float = 0.0
 

@@ -7,15 +7,15 @@ from ipsqt.runner import Runner
 from ipsqt.features.preprocessor import Preprocessor
 from config.experiment_config import ExperimentConfig
 from config.dl_model_config import DLModelConfig
-from ipsqt.prediction.dl.dl_predictor import DLPredictor
+from ipsqt.prediction.dl.dl_predictor import DLClassifier
 
 from ipsqt.strategies.predicted.binary_position_strategy import BinaryPositionStrategy
-from ipsqt.prediction.dl.models.mlp import MLP
+from ipsqt.prediction.dl.models.mlp import MLPClassifier
 
 
 REBAL_FREQ = "D"
 STRATEGY = BinaryPositionStrategy
-MODEL = MLP
+MODEL = MLPClassifier
 RETRAIN = False
 
 SAVE = True
@@ -61,10 +61,13 @@ def run_backtest() -> StrategyStatistics:
     print("Running backtest...")
     preprocessor, runner = initialize()
 
-    predictor = DLPredictor(
+    model_config = DLModelConfig()
+    model_config.n_features = len(runner.available_features)
+    model_config.n_classes = 2
+
+    predictor = DLClassifier(
         model_cls=MODEL,
-        model_config=DLModelConfig(),
-        n_features=len(runner.available_features),
+        model_config=model_config,
         verbose=False,
     )
 
