@@ -21,7 +21,9 @@ class DLModelConfig(BaseModelConfig):
     n_epochs: int = 10
 
     optimizer: Type[torch.optim.Optimizer] = torch.optim.SGD
-    scheduler: Type[torch.optim.lr_scheduler._LRScheduler] = torch.optim.lr_scheduler.CosineAnnealingLR
+    scheduler: Type[torch.optim.lr_scheduler._LRScheduler] = (
+        torch.optim.lr_scheduler.CosineAnnealingLR
+    )
 
     weights_decay: float = 0.0
 
@@ -30,3 +32,10 @@ class DLModelConfig(BaseModelConfig):
     loss: nn.Module = nn.CrossEntropyLoss()
 
     clip_grad_norm: float | None = None
+
+    # Transformer
+    n_attention_heads: int = 6
+    dim_feedforward: int = 2048
+
+    # SVI
+    n_resample_svi: int | None = None

@@ -14,8 +14,18 @@ class BasePredictor(ABC):
 
         self.model_config = model_config
 
-        self.feat_scaler = self.model_config.feature_scaler() if self.model_config.feature_scaler is not None else None
-        self.target_scaler = self.model_config.target_scaler() if self.model_config.target_scaler is not None else None
+        self.feat_scaler = (
+            self.model_config.feature_scaler()
+            if self.model_config.feature_scaler is not None
+            else None
+        )
+        self.target_scaler = (
+            self.model_config.target_scaler()
+            if self.model_config.target_scaler is not None
+            else None
+        )
+
+        self.uncertainty_estimate = None
 
     def fit(self, X: pd.DataFrame, y: pd.Series) -> None:
         if self.feat_scaler is not None:
@@ -46,4 +56,8 @@ class BasePredictor(ABC):
 
     @abstractmethod
     def _predict_model(self, X: pd.DataFrame) -> np.ndarray:
+        raise NotImplementedError
+
+    @abstractmethod
+    def init_model(self) -> None:
         raise NotImplementedError

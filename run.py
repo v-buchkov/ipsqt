@@ -22,10 +22,10 @@ SAVE = True
 
 
 def initialize(
-        with_causal_window: bool = True,
-        start: str | None = None,
-        end: str | None = None,
-        rebal_freq: str = REBAL_FREQ,
+    with_causal_window: bool = True,
+    start: str | None = None,
+    end: str | None = None,
+    rebal_freq: str = REBAL_FREQ,
 ) -> tuple[Preprocessor, Runner]:
     experiment_config = ExperimentConfig()
 

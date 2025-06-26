@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ipsqt.strategies.optimization_data import PredictionData, TrainingData
 
+import numpy as np
 import pandas as pd
 
 from ipsqt.strategies.base_strategy import BaseStrategy
@@ -19,16 +20,18 @@ class BasePredictedStrategy(BaseStrategy):
         self,
         predictor: BasePredictor,
         window_size: int | None = None,
-        retrain: bool = False,
+        retrain_num_days: int | None = None,
     ) -> None:
         super().__init__()
 
         self.predictor = predictor
         self.window_size = window_size
-        self.retrain = retrain
+        self.retrain_num_days = retrain_num_days
 
         self._predictions = []
-        self._fitted = False
+        self._targets = []
+        self._fitted_date = None
+        self.seen_training_data = None
 
     def _filter_stocks(self, training_data: TrainingData) -> TrainingData:
         ret = training_data.simple_excess_returns[self.available_assets]
@@ -63,7 +66,9 @@ class BasePredictedStrategy(BaseStrategy):
 
         return training_data
 
-    def _get_prediction_data(self, training_data: TrainingData) -> tuple[pd.DataFrame, pd.Series]:
+    def _get_prediction_data(
+        self, training_data: TrainingData
+    ) -> tuple[pd.DataFrame, pd.Series]:
         feat = training_data.features
         target = self.construct_target(training_data=training_data)
 
@@ -92,16 +97,19 @@ class BasePredictedStrategy(BaseStrategy):
 
         feat = feat.loc[first_date:last_date]
         target = target.loc[first_date:last_date]
-
         return feat, target
 
     def _fit(self, training_data: TrainingData) -> None:
-        if self.retrain or not self._fitted:
+        self.seen_training_data = training_data
+
+        if self._fitted_date is None or (self.retrain_num_days is not None and (training_data.features.index[-1] - self._fitted_date).days >= self.retrain_num_days):
+            self.predictor.init_model()
             training_data = self._filter_stocks(training_data=training_data)
             features, targets = self._get_prediction_data(training_data=training_data)
+            self._targets.append(targets.reset_index().squeeze(1).to_numpy())
 
             self.predictor.fit(X=features, y=targets)
-            self._fitted = True
+            self._fitted_date = features.index[-1]
 
     @abstractmethod
     def construct_target(self, training_data: TrainingData) -> pd.Series:
@@ -120,14 +128,25 @@ class BasePredictedStrategy(BaseStrategy):
         predictions = pd.DataFrame(
             predictions, columns=self.available_assets, index=feat.index
         )
-        self._predictions.append(predictions.to_numpy())
+        self._predictions.append([feat.index[-1], predictions.to_numpy().item()])
 
         weights_.loc[:, self.available_assets] = self.pred_to_weights(predictions)
         return weights_
 
     @property
+    def targets(self) -> pd.DataFrame | None:
+        if len(self._targets) == 0:
+            return None
+
+        target = pd.DataFrame(
+            np.concatenate(self._targets, axis=0), columns=["date", "true"]
+        )
+        target["date"] = pd.to_datetime(target["date"])
+        return target.set_index("date")
+
+    @property
     def predictions(self) -> pd.DataFrame | None:
-        if self._predictions is None:
+        if len(self._predictions) == 0:
             return None
 
         pred = pd.DataFrame(self._predictions, columns=["date", "prediction"])
