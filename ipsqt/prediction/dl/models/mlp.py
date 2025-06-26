@@ -3,12 +3,14 @@ from torch import nn
 
 
 class _MLP(nn.Module):
-    def __init__(self, sizes: list[int]):
+    def __init__(self, sizes: list[int], dropout: float = 0.0):
         super().__init__()
         layers = []
         for i, (in_size, out_size) in enumerate(zip(sizes[:-1], sizes[1:])):
             layers.append(nn.Linear(in_size, out_size))
             if i < len(sizes) - 2:
+                if dropout > 0:
+                    layers.append(nn.Dropout(dropout))
                 layers.append(nn.ReLU())
         self.layers = nn.Sequential(*layers)
 

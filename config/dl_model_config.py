@@ -36,3 +36,6 @@ class DLModelConfig(BaseModelConfig):
     # Transformer
     n_attention_heads: int = 6
     dim_feedforward: int = 2048
+
+    # SVI
+    n_resample_svi: int | None = None

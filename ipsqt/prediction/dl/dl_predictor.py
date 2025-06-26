@@ -198,13 +198,28 @@ class DLClassifier(_DLPredictor):
             track_grad_norm=track_grad_norm,
         )
 
-    def _predict_model(self, X: pd.DataFrame) -> np.ndarray:
+    def _get_logits(self, X: pd.DataFrame) -> np.ndarray:
         feat_torch = torch.Tensor(X.to_numpy()).to(self.device)
         if isinstance(self.model, LSTMClassifier):
             pred, _ = self.model(feat_torch)
             pred = pred.detach()
         else:
             pred = self.model(feat_torch).detach()
-
-        pred = torch.argmax(pred, dim=1)
         return pred.cpu().numpy()
+
+    def _predict_model(self, X: pd.DataFrame) -> np.ndarray:
+        if self.model_config.n_resample_svi is not None:
+            preds = []
+            for _ in range(self.model_config.n_resample_svi):
+                predict = self._get_logits(X)
+                preds.append(predict)
+
+            preds = np.array(preds)
+            self.uncertainty_estimate = np.std(preds, axis=0)[0][0]
+            pred = preds.mean(axis=0)
+        else:
+            self.model.eval()
+            pred = self._get_logits(X)
+
+        pred = np.argmax(pred, axis=1)
+        return pred

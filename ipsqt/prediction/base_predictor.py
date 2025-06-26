@@ -25,6 +25,8 @@ class BasePredictor(ABC):
             else None
         )
 
+        self.uncertainty_estimate = None
+
     def fit(self, X: pd.DataFrame, y: pd.Series) -> None:
         if self.feat_scaler is not None:
             feat_transf = self.feat_scaler.fit_transform(X)
