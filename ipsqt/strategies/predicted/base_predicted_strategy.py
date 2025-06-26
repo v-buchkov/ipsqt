@@ -20,17 +20,17 @@ class BasePredictedStrategy(BaseStrategy):
         self,
         predictor: BasePredictor,
         window_size: int | None = None,
-        retrain: bool = False,
+        retrain_num_days: int | None = None,
     ) -> None:
         super().__init__()
 
         self.predictor = predictor
         self.window_size = window_size
-        self.retrain = retrain
+        self.retrain_num_days = retrain_num_days
 
         self._predictions = []
         self._targets = []
-        self._fitted = False
+        self._fitted_date = None
         self.seen_training_data = None
 
     def _filter_stocks(self, training_data: TrainingData) -> TrainingData:
@@ -97,19 +97,19 @@ class BasePredictedStrategy(BaseStrategy):
 
         feat = feat.loc[first_date:last_date]
         target = target.loc[first_date:last_date]
-
         return feat, target
 
     def _fit(self, training_data: TrainingData) -> None:
         self.seen_training_data = training_data
 
-        if self.retrain or not self._fitted:
+        if self._fitted_date is None or (self.retrain_num_days is not None and (training_data.features.index[-1] - self._fitted_date).days >= self.retrain_num_days):
+            self.predictor.init_model()
             training_data = self._filter_stocks(training_data=training_data)
             features, targets = self._get_prediction_data(training_data=training_data)
             self._targets.append(targets.reset_index().squeeze(1).to_numpy())
 
             self.predictor.fit(X=features, y=targets)
-            self._fitted = True
+            self._fitted_date = features.index[-1]
 
     @abstractmethod
     def construct_target(self, training_data: TrainingData) -> pd.Series:

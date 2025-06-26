@@ -55,3 +55,7 @@ class BasePredictor(ABC):
     @abstractmethod
     def _predict_model(self, X: pd.DataFrame) -> np.ndarray:
         raise NotImplementedError
+
+    @abstractmethod
+    def init_model(self) -> None:
+        raise NotImplementedError

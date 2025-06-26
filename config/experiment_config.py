@@ -53,13 +53,18 @@ class ExperimentConfig(BaseExperimentConfig):
     )
 
     MIN_ROLLING_PERIODS: int = field(
-        default=252 * 5 + 21 * 2,
+        default=52,
         metadata={"docs": "Number of minimum rebalance periods to run the strategy"},
+    )
+
+    TARGETS: tuple[str] = field(
+        default=("MKT_Target",),
+        metadata={"docs": "ML Targets"},
     )
 
     # Universe Setting
     ASSET_UNIVERSE: tuple[str] = field(
-        default=("_MKT",),
+        default=("MKT_Return",),
         metadata={"docs": "Tradeable assets tuple"},
     )
 
@@ -69,17 +74,17 @@ class ExperimentConfig(BaseExperimentConfig):
     )
 
     FACTORS: tuple[str] = field(
-        default=("_MKT",),
+        default=("MKT_Factor",),
         metadata={"docs": "Tradeable factors tuple"},
     )
 
     RF_NAME: str = field(
-        default="IR",
+        default="Daily_IR",
         metadata={"docs": "Risk-Free rate column name"},
     )
 
     MKT_NAME: str = field(
-        default="_MKT",
+        default="MKT_Factor",
         metadata={"docs": "Market index column name"},
     )
 

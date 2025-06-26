@@ -32,3 +32,7 @@ class DLModelConfig(BaseModelConfig):
     loss: nn.Module = nn.CrossEntropyLoss()
 
     clip_grad_norm: float | None = None
+
+    # Transformer
+    n_attention_heads: int = 6
+    dim_feedforward: int = 2048
