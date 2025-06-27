@@ -100,7 +100,7 @@ from ipsqt.strategies.predicted.momentum_reversal_uncert_strategy import Momentu
 
 from run import initialize
 
-REBAL_FREQ = "D"
+REBAL_FREQ = "ME"
 STRATEGY = MomentumReversalUncertStrategy
 MODEL = MLPClassifier
 RETRAIN_NUM_DAYS = 21
